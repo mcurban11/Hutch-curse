@@ -1,0 +1,133 @@
+---
+title: "DataCleaning_NoRescue"
+author: "Ben Wasserman"
+date: '`r Sys.Date()`'
+output: html_document
+---
+
+
+Process no-rescue scenario data
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(readxl)
+library(viridis)
+library(ggpubr)
+library(colorspace)
+library(grid)
+library(gdata)
+library(str2str)
+library(parallel)
+library(beepr)
+
+```
+
+```{r definefunctions}
+datasubset <- function(x){
+  filter(x[[1]], Time == 600)
+}
+
+```
+
+```{r loaddata}
+
+#Note the parallel processing here is going to be rewritten to be used on a windows machine, but the model itself was run on mac
+
+nameslist <- c("A_2025_10_29", "B_2025_10_30", "C_2025_10_30", "D_2025_10_30", "E_2025_10_30", "F_2025_10_31", "G_2025_10_31", "H_2025_11_01", "I_2025_11_01", "J_2025_11_02", "K_2025_11_02", "L_2025_11_02", "M_2025_11_03", "N_2025_11_04", "O_2025_11_04", "P_2025_11_05", "Q_2025_11_05", "R_2025_11_06", "S_2025_11_06", "T_2025_11_06", "U_2025_11_07", "V_2025_11_07", "W_2025_11_07", "X_2025_11_08", "Y_2025_11_08", "Z_2025_11_08", "AA_2025_11_08", "AB_2025_11_08", "AC_2025_11_08", "AD_2025_11_08")
+
+#nameslist <- c("Test_6th_rescue_strategy_2025_10_29", "A_2025_10_29", "B_2025_10_30")
+
+#So There was an I dataset, but it was missing data for a single iteration out of the 120. Out of an abundance of caution I'm replacing the whole thing with the Z dataset 
+
+Paramdfcombined <- vector(mode = "list", length = length(nameslist))
+results_mclapplycombined <- vector(mode = "list", length(nameslist))
+for (i in 1:length(nameslist)) {
+  load(file = paste0("Outputs/Parallel/", nameslist[i], "_Outputs.Rdata"))
+  Paramdfcombined[[i]] <- Paramdf
+  results_mclapplycombined[[i]] <- results_mclapply
+}
+Paramdfall <- ld2d(Paramdfcombined)
+#Commented out the line above, because in this case, with one list, we can just use Paramdfcombined
+#Paramdfall <- Paramdfcombined[[1]]
+
+#A-Z (minus I) is 30 iterations, 120x30 = 3600 rows
+nrow(Paramdfall)
+
+#This gets us a 3d array with all of the outputs
+results_mclapplyall <- unlist(results_mclapplycombined, recursive = FALSE)
+
+
+#This gets us a 3d array with all of the outputs
+DRlistlist <- lapply(results_mclapplyall, FUN = "[[", 3)
+
+
+#I know that DRlistlist[[1]] is blank because the population went extinct
+#I thought that the model would always fill that in but apparently not
+#DRlistlist[[1351]]<-DRlistlist[[1]]
+
+#DRlistlist <- mclapply(results_mclapplyall, FUN = "[[", 3, mc.cores = 15)
+DRlistarray <- lm2a(DRlistlist)
+
+
+
+landlist <- mclapply(results_mclapplyall, FUN = "[[", 2, mc.cores = 1)
+landarray <- ld2a(landlist)
+
+landarrayending <- landarray
+landarrayending[,1,] <- landarray[,1,]+5
+
+datalist <- mclapply(results_mclapplyall, FUN = datasubset, mc.cores = 1)
+dataarray <- ld2a(datalist)
+
+
+
+datamatrix <- matrix(dataarray, )
+
+
+```
+
+```{r noneendpoint}
+
+
+#Get the values at the endpoint
+poplist <- lapply(datalist, FUN = filter, (Variable == "Pop.Size"))
+gradlist <- lapply(datalist, FUN = filter, (Variable == "Grad"))
+envlist <- lapply(datalist, FUN = filter, (Variable == "Env"))
+gradvarlist <- lapply(datalist, FUN = filter, (Variable == "Grad.Var"))
+envvarlist <- lapply(datalist, FUN = filter, (Variable == "Env.Var"))
+
+poparray <- ld2a(poplist)
+
+
+gradarray <- ld2a(gradlist)
+envarray <- ld2a(envlist)
+gradvararray <- ld2a(gradvarlist)
+envvararray <- ld2a(envvarlist)
+
+Gradmatcharray <- gradarray
+Gradmatcharray[,5,] <- as.numeric(Gradmatcharray[,5,]) - rbind(landarrayending[,1,],landarrayending[,1,],landarrayending[,1,],landarrayending[,1,],landarrayending[,1,],landarrayending[,1,])
+
+Envmatcharray <- envarray
+Envmatcharray[,5,] <- as.numeric(Envmatcharray[,5,]) - rbind(landarrayending[,2,],landarrayending[,2,],landarrayending[,2,],landarrayending[,2,],landarrayending[,2,],landarrayending[,2,])
+
+  
+Paramdfall$Extant_None <- apply(matrix(as.numeric(poparray[1:50,5,]), nrow = 50, byrow = FALSE), MARGIN = 2, FUN = function(x) {sum(x>0, na.rm = TRUE)})
+Paramdfall$PopSize_None <- apply(matrix(as.numeric(poparray[1:50,5,]), nrow = 50, byrow = FALSE), MARGIN = 2, FUN = mean, na.rm = TRUE)
+Paramdfall$Maladapt.Grad_None <- apply(matrix(as.numeric(Gradmatcharray[1:50,5,]), nrow = 50, byrow = FALSE), MARGIN = 2, FUN = mean, na.rm = TRUE)
+Paramdfall$Maladapt.Env_None <- apply(matrix(as.numeric(Envmatcharray[1:50,5,]), nrow = 50, byrow = FALSE), MARGIN = 2, FUN = mean, na.rm = TRUE)
+Paramdfall$GradVar_None <- apply(matrix(as.numeric(gradvararray[1:50,5,]), nrow = 50, byrow = FALSE), MARGIN = 2, FUN = mean, na.rm = TRUE)
+Paramdfall$EnvVar_None <- apply(matrix(as.numeric(envvararray[1:50,5,]), nrow = 50, byrow = FALSE), MARGIN = 2, FUN = mean, na.rm = TRUE)
+
+Paramsum <- Paramdfall %>% dplyr::summarize(across(Extant_None:EnvVar_None, .fns = list(mean = ~mean(.x, na.rm = TRUE), sd = ~sd(.x, na.rm = TRUE))), .by = c(EnvType, Mig, Sel, MuMovement, Omega2grad))
+
+Paramsum$Extant_None_mean[which(Paramsum$Extant_None_mean==0)]<-NA
+Paramsum$PopSize_None_mean[which(Paramsum$PopSize_None_mean==0)]<-NA
+
+save.image("loadedFullListUpdated.Rdata")
+#save.image("loadedPhenotypeTestList.Rdata")
+beep(sound = 6)
+
+```

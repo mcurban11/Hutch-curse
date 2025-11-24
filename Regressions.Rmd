@@ -1,0 +1,91 @@
+---
+title: "Regressions"
+author: "Ben Wasserman"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(car)
+library(tidyverse)
+```
+
+
+```{r loaddata}
+load("RescueDataUpdated.Rdata")
+```
+
+```{r norescue}
+
+names(Paramdfall)
+
+Extant_GLM <- glm(cbind(Extant_None,50-Extant_None)~EnvType*Sel*Mig, family = "binomial", data = Paramdfall)
+summary(Extant_GLM)
+Extant_GLM_log <- glm(cbind(Extant_None,50-Extant_None)~EnvType*Sel*log10(Mig+0.000001), family = "binomial", data = Paramdfall)
+summary(Extant_GLM_log)
+Anova(Extant_GLM_log)
+#This model has the best AIC of these
+
+Extant_GLM_MuMovement <- glm(cbind(Extant_None,50-Extant_None)~EnvType*Sel*MuMovement, family = "binomial", data = Paramdfall)
+summary(Extant_GLM_MuMovement)
+
+Extant_GLM_MuMovement_log <- glm(cbind(Extant_None,50-Extant_None)~EnvType*Sel*log10(MuMovement), family = "binomial", data = Paramdfall)
+summary(Extant_GLM_MuMovement_log)
+
+
+plot(Extant_GLM)
+plot(Extant_GLM_log)
+
+Paramdfall$PopSize_None[which(is.na(Paramdfall$PopSize_None))]<-0
+
+PopSize_GLM <- glm(cbind(PopSize_None,500-PopSize_None)~EnvType*Sel*Mig, family = "binomial", data = Paramdfall)
+summary(PopSize_GLM)
+PopSize_GLM_log <- glm(cbind(PopSize_None,500-PopSize_None)~EnvType*Sel*log10(Mig+0.000001), family = "binomial", data = Paramdfall)
+summary(PopSize_GLM_log)
+Anova(PopSize_GLM_log)
+AIC(PopSize_GLM_log, PopSize_GLM)
+
+
+hist(Paramdfall)
+Maladapt.Grad_GLM <- glm(Maladapt.Grad_None~EnvType*Sel*Mig, family = "gaussian", data = Paramdfall)
+summary(Maladapt.Grad_GLM)
+
+Maladapt.Grad_GLM_log <- glm(Maladapt.Grad_None~EnvType*Sel*log10(Mig+0.000001), family = "gaussian", data = Paramdfall)
+summary(Maladapt.Grad_GLM_log)
+Anova(Maladapt.Grad_GLM_log)
+
+AIC(Maladapt.Grad_GLM, Maladapt.Grad_GLM_log)
+
+Maladapt.Env_GLM_log <- glm(Maladapt.Env_None~EnvType*Sel*log10(Mig+0.000001), family = "gaussian", data = Paramdfall)
+summary(Maladapt.Env_GLM_log)
+
+
+Gradvar_GLM_lg <- glm()
+
+```
+
+```{r rescue}
+
+hist(filter(rescuecomb, Variable == "Extant")$Value)
+extant_rescuelm <- lm(Value~Sel*log10(Mig+0.000001)*EnvType, data = filter(rescuecomb, Variable  == "Extant")) 
+summary(extant_rescuelm)
+plot(extant_rescuelm)
+
+hist(filter(rescuecomb, Variable == "Pop.Size")$Value)
+popsize_rescuelm <- lm(Value~Sel*log10(Mig+0.000001)*EnvType, data = filter(rescuecomb, Variable  == "Pop.Size")) 
+summary(popsize_rescuelm)
+plot(popsize_rescuelm)
+
+hist(filter(rescuecomb, Variable =="Grad.Maladaptation")$Value)
+gradmal_rescuelm <- lm(Value~Sel*log10(Mig+0.000001)*EnvType, data = filter(rescuecomb, Variable  == "Grad.Maladaptation")) 
+summary(gradmal_rescuelm)
+plot(gradmal_rescuelm)
+
+hist(filter(rescuecomb, Variable =="Env.Maladaptation")$Value)
+envmal_rescuelm <- lm(Value~Sel*log10(Mig+0.000001)*EnvType, data = filter(rescuecomb, Variable  == "Env.Maladaptation")) 
+summary(envmal_rescuelm)
+plot(envmal_rescuelm)
+
+```

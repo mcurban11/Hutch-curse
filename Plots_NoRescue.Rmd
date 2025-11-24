@@ -1,0 +1,132 @@
+---
+title: "Plots_NoRescue"
+author: "Ben Wasserman"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+Plot the No Rescue Results
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(readxl)
+library(viridis)
+library(ggpubr)
+library(colorspace)
+library(grid)
+library(gdata)
+library(str2str)
+library(parallel)
+library(beepr)
+
+```
+
+
+```{r loaddata}
+load("loadedFullListUpdated.Rdata")
+#load("loadedPhenotypeTestList.Rdata")
+```
+
+```{r nonesplot}
+
+##Basic two-panel plots
+
+ggplot(data = Paramsum, aes(x = -log10(Mig+0.000001), y = -Omega2grad, fill = Extant_None_mean)) + geom_tile() + scale_fill_viridis() + facet_grid(~EnvType) + theme_classic()
+
+ggplot(data = Paramsum, aes(x = -log10(Mig+0.000001), y = -Omega2grad, fill = PopSize_None_mean)) + geom_tile() + scale_fill_viridis() + facet_grid(~EnvType) + theme_classic()
+
+ggplot(data = Paramsum, aes(x = -log10(Mig+0.000001), y = -Omega2grad, fill = Maladapt.Grad_None_mean)) + geom_tile() + scale_fill_viridis() + facet_grid(~EnvType) + theme_classic()
+
+ggplot(data = Paramsum, aes(x = -log10(Mig+0.000001), y = -Omega2grad, fill = Maladapt.Env_None_mean)) + geom_tile() + scale_fill_viridis() + facet_grid(~EnvType) + theme_classic()
+
+ggplot(data = Paramsum, aes(x = -log10(Mig+0.000001), y = -Omega2grad, fill = GradVar_None_mean)) + geom_tile() + scale_fill_viridis() + facet_grid(~EnvType) + theme_classic()
+
+ggplot(data = Paramsum, aes(x = -log10(Mig+0.000001), y = -Omega2grad, fill = EnvVar_None_mean)) + geom_tile() + scale_fill_viridis() + facet_grid(~EnvType) + theme_classic()
+
+##Recreate combined plot, we do each panel singly and then combine
+
+
+
+  #Set ranges for plots
+  gradmaladaptrange <- range(Paramsum$Maladapt.Grad_None_mean, na.rm = TRUE)
+  gradmaladaptrangeround <- c(round(gradmaladaptrange[1], digits = 1)-0.1, round(gradmaladaptrange[2], digits = 1)+0.1)
+    envmaladaptrange <- range(Paramsum$Maladapt.Env_None_mean, na.rm = TRUE)
+  envmaladaptrangeround <- c(round(envmaladaptrange[1], digits = 1)-0.1, round(envmaladaptrange[2], digits = 1)+0.1)
+
+  
+  gradvarmax <- round(max(Paramsum$GradVar_None_mean, na.rm = TRUE),1)
+  envvarmax <- ceiling(max(Paramsum$EnvVar_None_mean, na.rm = TRUE))
+  
+  spacer <- rep(16,4)
+  
+  smalltxtsize <- 8
+  lgtxtsize <- 8
+
+
+#Rescue Effects Plots is probably the right template
+
+#num extant
+extantfixed <- ggplot(data = filter(Paramsum, EnvType == "Fixed"), aes(x = log10(Mig+0.000001), y = -(1/Sel))) + geom_tile(aes(fill = Extant_None_mean)) + scale_fill_viridis(limits = c(0,50), name = "Populations\nExtant") + scale_x_continuous(breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(plot.margin = unit(spacer, "points"), axis.title = element_blank(), legend.title=element_text(size = lgtxtsize), axis.text = element_text(size = smalltxtsize), legend.text = element_text(size = smalltxtsize))
+
+extantvariable <- ggplot(data = filter(Paramsum, EnvType == "Variable"), aes(x = log10(Mig+0.000001), y = -(1/Sel))) + geom_tile(aes(fill = Extant_None_mean)) + scale_fill_viridis(limits = c(0,50), name = "Populations\nExtant") + scale_x_continuous(breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(plot.margin = unit(spacer, "points"), axis.title = element_blank(), legend.title=element_text(size = lgtxtsize), axis.text = element_text(size = smalltxtsize), legend.text = element_text(size = smalltxtsize))
+
+#avg pop size
+popsizefixed <- ggplot(data = filter(Paramsum, EnvType == "Fixed"), aes(x = log10(Mig+0.000001), y = -(1/Sel))) + geom_tile(aes(fill = PopSize_None_mean)) + scale_fill_viridis(limits = c(0,500), name = "Population\nSize") + scale_x_continuous(breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(plot.margin = unit(spacer, "points"), axis.title = element_blank(), legend.title=element_text(size = lgtxtsize), axis.text = element_text(size = smalltxtsize), legend.text = element_text(size = smalltxtsize))
+
+popsizevariable <- ggplot(data = filter(Paramsum, EnvType == "Variable"), aes(x = log10(Mig+0.000001), y = -(1/Sel))) + geom_tile(aes(fill = PopSize_None_mean)) + scale_fill_viridis(limits = c(0,500), name = "Population\nSize") + scale_x_continuous(breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(plot.margin = unit(spacer, "points"), axis.title = element_blank(), legend.title=element_text(size = lgtxtsize), axis.text = element_text(size = smalltxtsize), legend.text = element_text(size = smalltxtsize))
+
+#grad maladapt
+gradmalfixed <- ggplot(data = filter(Paramsum, EnvType == "Fixed"), aes(x = log10(Mig+0.000001), y = -(1/Sel))) + geom_tile(aes(fill = Maladapt.Grad_None_mean)) + scale_fill_gradient2(name = "Gradient-\nPhenotype\nMaladaptation", low = 'red', mid = 'white', high = 'blue', midpoint = 0) + scale_x_continuous(breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(plot.margin = unit(spacer, "points"), axis.title = element_blank(), legend.title=element_text(size = lgtxtsize), axis.text = element_text(size = smalltxtsize), legend.text = element_text(size = smalltxtsize))
+
+gradmalvariable <- ggplot(data = filter(Paramsum, EnvType == "Variable"), aes(x = log10(Mig+0.000001), y = -(1/Sel))) + geom_tile(aes(fill = Maladapt.Grad_None_mean)) + scale_fill_gradient2(name = "Gradient-\nPhenotype\nMaladaptation", low = 'red', mid = 'white', high = 'blue', midpoint = 0)  + scale_x_continuous(breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(plot.margin = unit(spacer, "points"), axis.title = element_blank(), legend.title=element_text(size = lgtxtsize), axis.text = element_text(size = smalltxtsize), legend.text = element_text(size = smalltxtsize))
+
+#env maladapt
+envmalfixed <- ggplot(data = filter(Paramsum, EnvType == "Fixed"), aes(x = log10(Mig+0.000001), y = -(1/Sel))) + geom_tile(aes(fill = Maladapt.Env_None_mean)) + scale_fill_gradient2(name = "Environment-\nPhenotype\nMaladaptation", low = 'red', mid = 'white', high = 'blue', midpoint = 0)  + scale_x_continuous(breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(plot.margin = unit(spacer, "points"), axis.title = element_blank(), legend.title=element_text(size = lgtxtsize), axis.text = element_text(size = smalltxtsize), legend.text = element_text(size = smalltxtsize))
+
+envmalvariable <- ggplot(data = filter(Paramsum, EnvType == "Variable"), aes(x = log10(Mig+0.000001), y = -(1/Sel))) + geom_tile(aes(fill = Maladapt.Env_None_mean)) + scale_fill_gradient2(name = "Environment-\nPhenotype\nMaladaptation", low = 'red', mid = 'white', high = 'blue', midpoint = 0)  + scale_x_continuous(breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(plot.margin = unit(spacer, "points"), axis.title = element_blank(), legend.title=element_text(size = lgtxtsize), axis.text = element_text(size = smalltxtsize), legend.text = element_text(size = smalltxtsize))
+
+#grad var
+gradvarfixed <- ggplot(data = filter(Paramsum, EnvType == "Fixed"), aes(x = log10(Mig+0.000001), y = -(1/Sel))) + geom_tile(aes(fill = GradVar_None_mean)) + scale_fill_viridis(limits = c(0,gradvarmax), name = "Gradient\nPhenotypic\nVariance", option = "magma") + scale_x_continuous(breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(plot.margin = unit(spacer, "points"), axis.title = element_blank(), legend.title=element_text(size = lgtxtsize), axis.text = element_text(size = smalltxtsize), legend.text = element_text(size = smalltxtsize))
+
+gradvarvariable <- ggplot(data = filter(Paramsum, EnvType == "Variable"), aes(x = log10(Mig+0.000001), y = -(1/Sel))) + geom_tile(aes(fill = GradVar_None_mean)) + scale_fill_viridis(limits = c(0,gradvarmax), name = "Gradient\nPhenotypic\nVariance", option = "magma") + scale_x_continuous(breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(plot.margin = unit(spacer, "points"), axis.title = element_blank(), legend.title=element_text(size = lgtxtsize), axis.text = element_text(size = smalltxtsize), legend.text = element_text(size = smalltxtsize))
+
+#env var
+envvarfixed <- ggplot(data = filter(Paramsum, EnvType == "Fixed"), aes(x = log10(Mig+0.000001), y = -(1/Sel))) + geom_tile(aes(fill = EnvVar_None_mean)) + scale_fill_viridis(limits = c(0,envvarmax), name = "Environment\nPhenotypic\nVariance", option = "magma") + scale_x_continuous(breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(plot.margin = unit(spacer, "points"), axis.title = element_blank(), legend.title=element_text(size = lgtxtsize), axis.text = element_text(size = smalltxtsize), legend.text = element_text(size = smalltxtsize))
+
+envvarvariable <- ggplot(data = filter(Paramsum, EnvType == "Variable"), aes(x = log10(Mig+0.000001), y = -(1/Sel))) + geom_tile(aes(fill = EnvVar_None_mean)) + scale_fill_viridis(limits = c(0,envvarmax), name = "Environment\nPhenotypic\nVariance", option = "magma") + scale_x_continuous(breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(plot.margin = unit(spacer, "points"), axis.title = element_blank(), legend.title=element_text(size = lgtxtsize), axis.text = element_text(size = smalltxtsize), legend.text = element_text(size = smalltxtsize))
+
+
+explot <- ggarrange(extantfixed, extantvariable, nrow = 1, legend = 'right', common.legend = TRUE)
+popplot <- ggarrange(popsizefixed, popsizevariable, nrow = 1, legend = 'right', common.legend = TRUE)
+gradplot <- ggarrange(gradmalfixed, gradmalvariable, nrow = 1, legend = 'right', common.legend = TRUE)
+envplot <- ggarrange(envmalfixed, envmalvariable, nrow = 1, legend = 'right', common.legend = TRUE)
+gradvarplot <- ggarrange(gradvarfixed, gradvarvariable, nrow = 1, legend = 'right', common.legend = TRUE)
+envvarplot <- ggarrange(envvarfixed, envvarvariable, nrow = 1, legend = 'right', common.legend = TRUE)
+
+nonesplot <- ggarrange(explot, popplot, gradplot, envplot, gradvarplot, envvarplot, ncol = 1)
+nonesplot2 <- annotate_figure(nonesplot, left = textGrob("Selection Strength (1/omega^2)", rot = 90, vjust = 1, gp = gpar(cex=1)), bottom = textGrob("Proportion Migrants", vjust= -0.25, gp = gpar(cex=1)), top = textGrob("Fixed Environment                  Variable Environment", gp = gpar(cex = 1)))
+pdf(file = "./Outputs/V3 Figures/nonesplot2025_11_10.pdf", height = 10, width = 7.5)
+nonesplot2
+dev.off()
+
+
+ggsave(nonesplot2, filename = "./Outputs/V3 Figures/nonesplot2025_11_10.wmf", height = 10, width = 7.5, units = "in")
+
+ggsave(nonesplot2, filename = "./Outputs/V3 Figures/nonesplot2025_11_10.png", height = 10, width = 7.5, units = "in")
+
+```
+
+```{r envmaladapt}
+Paramsum2 <- Paramsum %>% mutate(EnvLCI = Maladapt.Env_None_mean - qnorm(0.975)* Maladapt.Env_None_sd/sqrt(30), EnvUCI =  Maladapt.Env_None_mean + qnorm(0.975)* Maladapt.Env_None_sd/sqrt(30), Overlap0 = ((EnvLCI<=0)&(EnvUCI>=0)))
+
+write.csv(Paramsum2, "./Outputs/V3 Figures/LoadedFulllistUpdatedParamsum.csv")
+
+```
+
+
+```{r rescuedata}
+#Here I need to look at "Rescue Effects Plots.Rmd" and modify code from the chunk: RescueLength and beyond.
+
+```

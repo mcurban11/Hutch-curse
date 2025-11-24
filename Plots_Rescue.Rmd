@@ -1,0 +1,171 @@
+---
+title: "Plots_RescueData"
+author: "Ben Wasserman"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(readxl)
+library(viridis)
+library(ggpubr)
+library(colorspace)
+library(grid)
+library(gdata)
+library(str2str)
+library(parallel)
+library(beepr)
+
+```
+
+```{r loaddata}
+
+load("RescueDataUpdated.Rdata")
+```
+
+```{r plotallpops}
+
+
+
+difflabs <- c("Nearest Neighbor", "Gradient-Matched", "Gradient&Env-Matched", "Phenotype-Matched", "Multi-Source")
+names(difflabs) <- c("DemographicDiff", "GradDiff", "GradEnvDiff", "PhenDiff", "MultipleDiff")
+
+smalltxtsize <- 8
+
+#Fixed Environment
+
+fexplot <- ggplot(data = filter(rescuecombplot, ((EnvType == "Fixed")&(Variable == "Extant"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Populations\nExtant", limits = range(filter(rescuecombplot, ((EnvType == "Fixed")&(Variable == "Extant")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+fpsplot <- ggplot(data = filter(rescuecombplot, ((EnvType == "Fixed")&(Variable == "Pop.Size"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Population\nSize", limits = range(filter(rescuecombplot, ((EnvType == "Fixed")&(Variable == "Pop.Size")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+fgmplot <- ggplot(data = filter(rescuecombplot, ((EnvType == "Fixed")&(Variable == "Grad.Maladaptation"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Gradient-\nPhenotype\nMaladaptation", limits = range(filter(rescuecombplot, ((EnvType == "Fixed")&(Variable == "Grad.Maladaptation")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+femplot <- ggplot(data = filter(rescuecombplot, ((EnvType == "Fixed")&(Variable == "Env.Maladaptation"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Environment-\nPhenotype\nMaladaptation", limits = range(filter(rescuecombplot, ((EnvType == "Fixed")&(Variable == "Env.Maladaptation")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+fgvplot <- ggplot(data = filter(rescuecombplot, ((EnvType == "Fixed")&(Variable == "GradVar"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Gradient\nPhenotypic\nVariance", limits = range(filter(rescuecombplot, ((EnvType == "Fixed")&(Variable == "GradVar")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+fevplot <- ggplot(data = filter(rescuecombplot, ((EnvType == "Fixed")&(Variable == "EnvVar"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Environment\nPhenotypic\nVariance", limits = range(filter(rescuecombplot, ((EnvType == "Fixed")&(Variable == "EnvVar")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+fixedplot <- ggarrange(fexplot, fpsplot, fgmplot, femplot, fgvplot, fevplot, ncol = 1)
+fixedplot2 <- annotate_figure(fixedplot, left = textGrob("Selection Strength (1/omega^2)", rot = 90, vjust = 1, gp = gpar(cex=1)), bottom = textGrob("Proportion Migrants", vjust= -0.25, gp = gpar(cex = 1)), top = textGrob("All Populations Averaged, Fixed Environment", gp = gpar(cex=1)))
+
+ggsave(fixedplot2, filename = "./Outputs/V3 Figures/diffplot_fixed_updated.wmf", height = 10, width = 7.5, units = "in")
+
+ggsave(fixedplot2, filename = "./Outputs/V3 Figures/diffplot_fixed_updated.png", height = 10, width = 7.5, units = "in")
+
+
+  
+pdf(file = "./Outputs/V3 Figures/diffplot_fixed_updated.pdf", height = 10, width = 7.5)
+fixedplot2
+dev.off()
+
+#Variable Environment  
+
+vexplot <- ggplot(data = filter(rescuecombplot, ((EnvType == "Variable")&(Variable == "Extant"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Populations\nExtant", limits = range(filter(rescuecombplot, ((EnvType == "Variable")&(Variable == "Extant")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+vpsplot <- ggplot(data = filter(rescuecombplot, ((EnvType == "Variable")&(Variable == "Pop.Size"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Population\nSize", limits = range(filter(rescuecombplot, ((EnvType == "Variable")&(Variable == "Pop.Size")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+vgmplot <- ggplot(data = filter(rescuecombplot, ((EnvType == "Variable")&(Variable == "Grad.Maladaptation"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Gradient-\nPhenotype\nMaladaptation", limits = range(filter(rescuecombplot, ((EnvType == "Variable")&(Variable == "Grad.Maladaptation")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+vemplot <- ggplot(data = filter(rescuecombplot, ((EnvType == "Variable")&(Variable == "Env.Maladaptation"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Environment-\nPhenotype\nMaladaptation", limits = range(filter(rescuecombplot, ((EnvType == "Variable")&(Variable == "Env.Maladaptation")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+vgvplot <- ggplot(data = filter(rescuecombplot, ((EnvType == "Variable")&(Variable == "GradVar"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Gradient\nPhenotypic\nVariance", limits = range(filter(rescuecombplot, ((EnvType == "Variable")&(Variable == "GradVar")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+vevplot <- ggplot(data = filter(rescuecombplot, ((EnvType == "Variable")&(Variable == "EnvVar"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Environment\nPhenotypic\nVariance", limits = range(filter(rescuecombplot, ((EnvType == "Variable")&(Variable == "EnvVar")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+variableplot <- ggarrange(vexplot, vpsplot, vgmplot, vemplot, vgvplot, fevplot, ncol = 1)
+variableplot2 <- annotate_figure(variableplot, left = textGrob("Selection Strength (1/omega^2)", rot = 90, vjust = 1, gp = gpar(cex=1)), bottom = textGrob("Proportion Migrants", vjust= -0.25, gp = gpar(cex = 1)), top = textGrob("All Populations Averaged, Variable Environment", gp = gpar(cex=1))) + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+
+ggsave(variableplot2, filename = "./Outputs/V3 Figures/diffplot_variable_updated.wmf", height = 10, width = 7.5, units = "in")
+
+ggsave(variableplot2, filename = "./Outputs/V3 Figures/diffplot_variable_updated.png", height = 10, width = 7.5, units = "in")
+  
+pdf(file = "./Outputs/V3 Figures/diffplot_variable_updated.pdf", height = 10, width = 7.5)
+variableplot2
+dev.off()
+
+
+
+
+
+```
+
+
+```{r plotrecipientpops}
+
+#Fixed Environment
+
+fexplot_recip <- ggplot(data = filter(rescue_recipcombplot, ((EnvType == "Fixed")&(Variable == "Extant"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Populations\nExtant", limits = range(filter(rescue_recipcombplot, ((EnvType == "Fixed")&(Variable == "Extant")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+fpsplot_recip <- ggplot(data = filter(rescue_recipcombplot, ((EnvType == "Fixed")&(Variable == "Pop.Size"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Population\nSize", limits = range(filter(rescue_recipcombplot, ((EnvType == "Fixed")&(Variable == "Pop.Size")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+fgmplot_recip <- ggplot(data = filter(rescue_recipcombplot, ((EnvType == "Fixed")&(Variable == "Grad.Maladaptation"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Gradient-\nPhenotype\nMaladaptation", limits = range(filter(rescue_recipcombplot, ((EnvType == "Fixed")&(Variable == "Grad.Maladaptation")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+femplot_recip <- ggplot(data = filter(rescue_recipcombplot, ((EnvType == "Fixed")&(Variable == "Env.Maladaptation"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Environment-\nPhenotype\nMaladaptation", limits = range(filter(rescue_recipcombplot, ((EnvType == "Fixed")&(Variable == "Env.Maladaptation")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+fgvplot_recip <- ggplot(data = filter(rescue_recipcombplot, ((EnvType == "Fixed")&(Variable == "GradVar"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Gradient\nPhenotypic\nVariance", limits = range(filter(rescue_recipcombplot, ((EnvType == "Fixed")&(Variable == "GradVar")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+fevplot_recip <- ggplot(data = filter(rescue_recipcombplot, ((EnvType == "Fixed")&(Variable == "EnvVar"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Environment\nPhenotypic\nVariance", limits = range(filter(rescue_recipcombplot, ((EnvType == "Fixed")&(Variable == "EnvVar")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+fixedplot_recip <- ggarrange(fexplot_recip, fpsplot_recip, fgmplot_recip, femplot_recip, fgvplot_recip, fevplot_recip, ncol = 1)
+fixedplot2_recip <- annotate_figure(fixedplot_recip, left = textGrob("Selection Strength (1/omega^2)", rot = 90, vjust = 1, gp = gpar(cex=1)), bottom = textGrob("Proportion Migrants", vjust= -0.25, gp = gpar(cex = 1)), top = textGrob("Recipient Populations Only, Fixed Environment", gp = gpar(cex=1)))
+
+ggsave(fixedplot2_recip, filename = "./Outputs/V3 Figures/diffplot_fixed_recipientsonly_updated.wmf", height = 10, width = 7.5, units = "in")
+
+ggsave(fixedplot2_recip, filename = "./Outputs/V3 Figures/diffplot_fixed_recipientsonly_updated.png", height = 10, width = 7.5, units = "in")
+
+
+  
+pdf(file = "./Outputs/V3 Figures/diffplot_fixed_recipientsonly_updated.pdf", height = 10, width = 7.5)
+fixedplot2_recip
+dev.off()
+
+#Variable Environment  
+
+vexplot_recip <- ggplot(data = filter(rescue_recipcombplot, ((EnvType == "Variable")&(Variable == "Extant"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Populations\nExtant", limits = range(filter(rescue_recipcombplot, ((EnvType == "Variable")&(Variable == "Extant")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+vpsplot_recip <- ggplot(data = filter(rescue_recipcombplot, ((EnvType == "Variable")&(Variable == "Pop.Size"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Population\nSize", limits = range(filter(rescue_recipcombplot, ((EnvType == "Variable")&(Variable == "Pop.Size")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+vgmplot_recip <- ggplot(data = filter(rescue_recipcombplot, ((EnvType == "Variable")&(Variable == "Grad.Maladaptation"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Gradient-\nPhenotype\nMaladaptation", limits = range(filter(rescue_recipcombplot, ((EnvType == "Variable")&(Variable == "Grad.Maladaptation")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+vemplot_recip <- ggplot(data = filter(rescue_recipcombplot, ((EnvType == "Variable")&(Variable == "Env.Maladaptation"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Environment-\nPhenotype\nMaladaptation", limits = range(filter(rescue_recipcombplot, ((EnvType == "Variable")&(Variable == "Env.Maladaptation")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+vgvplot_recip <- ggplot(data = filter(rescue_recipcombplot, ((EnvType == "Variable")&(Variable == "GradVar"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Gradient\nPhenotypic\nVariance", limits = range(filter(rescue_recipcombplot, ((EnvType == "Variable")&(Variable == "GradVar")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+vevplot_recip <- ggplot(data = filter(rescue_recipcombplot, ((EnvType == "Variable")&(Variable == "EnvVar"))), aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Value)) + geom_tile() + facet_grid(.~Diff, labeller = labeller(Diff = difflabs)) + scale_fill_gradient2(name = "Environment\nPhenotypic\nVariance", limits = range(filter(rescue_recipcombplot, ((EnvType == "Variable")&(Variable == "EnvVar")))$Value), low = "red", mid = "white", high = "blue", midpoint = 0) + scale_x_continuous(name = NULL, breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = NULL, breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+variableplot_recip <- ggarrange(vexplot_recip, vpsplot_recip, vgmplot_recip, vemplot_recip, vgvplot_recip, fevplot_recip, ncol = 1)
+variableplot2_recip <- annotate_figure(variableplot_recip, left = textGrob("Selection Strength (1/omega^2)", rot = 90, vjust = 1, gp = gpar(cex=1)), bottom = textGrob("Proportion Migrants", vjust= -0.25, gp = gpar(cex = 1)), top = textGrob("Recipient Populations Only, Variable Environment", gp = gpar(cex=1))) + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+
+ggsave(variableplot2_recip, filename = "./Outputs/V3 Figures/diffplot_variable_recipientsonlyupdated.wmf", height = 10, width = 7.5, units = "in")
+
+ggsave(variableplot2_recip, filename = "./Outputs/V3 Figures/diffplot_variable_recipientsonlyupdated.png", height = 10, width = 7.5, units = "in")
+  
+pdf(file = "./Outputs/V3 Figures/diffplot_variable_recipientsonly_updated.pdf", height = 10, width = 7.5)
+variableplot2_recip
+dev.off()
+
+
+
+```
+
+```{r prerescueextantplots}
+
+
+pre_extant_plot <- ggplot(data = poplistrescueprerecipsumbyparameter, aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Extant)) + geom_tile() + facet_grid(~EnvType) + scale_fill_viridis(option = "A") + scale_x_continuous(name = "Proportion Migrants", breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = "Selection Strength (1/omega^2)", breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+pre_popsize_plot <- ggplot(data = poplistrescueprerecipsumbyparameter, aes(x = log10(Mig+0.000001), y = -(1/Sel), fill = Pop.Size)) + geom_tile() + facet_grid(~EnvType) + scale_fill_viridis(option = "A")+ scale_x_continuous(name = "Proportion Migrants", breaks = log10(c(0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1)), labels = c("0", "1e-05", "1e-04", "1e-03", "1e-02", "1e-01")) + scale_y_continuous(name = "Selection Strength (1/omega^2)", breaks = -1:-10, labels = c("1", "1/2", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10")) + theme_classic() + theme(axis.text.y = element_text(size = smalltxtsize), axis.text.x  = element_text(size = smalltxtsize, angle = 45, vjust = 1, hjust = 1))
+
+pdf(file = "./Outputs/V3 Figures/recipients_prerescue_extantupdated.pdf", height = 10, width = 7.5)
+pre_extant_plot
+dev.off()
+
+pdf(file = "./Outputs/V3 Figures/recipients_prerescue_popsizeupdated.pdf", height = 10, width = 7.5)
+pre_popsize_plot
+dev.off()
+```
